@@ -1,0 +1,100 @@
+<html>
+<head>
+    <title>CAPI Websocket Client Demo</title>
+    <link rel="stylesheet" href="bootstrap.min.css">
+    <script src="./sockjs-0.3.4.js"></script>
+    <script src="./stomp.js"></script>
+    <script type="text/javascript">
+        var stompClient = null;
+        function setConnected(connected) {
+            document.getElementById('connect').disabled = connected;
+            document.getElementById('disconnect').disabled = !connected;
+            document.getElementById('conversationDiv').style.visibility = connected ? 'visible' : 'hidden';
+            document.getElementById('messages').innerHTML = '';
+        }
+
+        function connect() {
+            var host = document.getElementById('host').value;
+            var socket = new SockJS(host);
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, function (frame) {
+                setConnected(true);
+                console.log('Connected: ' + frame);
+                stompClient.subscribe('/topic/messages', function (messageOutput) {
+                    showMessageOutput(JSON.parse(messageOutput.body));
+                });
+            });
+        }
+
+        function disconnect() {
+            if (stompClient != null) {
+                stompClient.disconnect();
+            }
+            setConnected(false);
+            console.log("Disconnected");
+        }
+
+        function sendMessage() {
+            var text = document.getElementById('text').value;
+            stompClient.send("/ws-demo/chat", {}, JSON.stringify({ 'from': 'demo', 'text': text }));
+        }
+
+        function showMessageOutput(messageOutput) {
+            var messages = document.getElementById('messages');
+            var breakMessage = document.createElement('br');
+            var span = document.createElement('span');
+            span.style = "margin-bottom: 5px;"
+            if(messageOutput.from === 'Robot') {
+                span.classList = "badge badge-light";
+            } else {
+                span.classList = "badge badge-info";
+            }
+            span.appendChild(document.createTextNode(messageOutput.from + ": " + messageOutput.text + " (" + messageOutput.time + ")"));
+            messages.appendChild(span);
+            messages.appendChild(breakMessage);
+        }
+    </script>
+</head>
+
+<body onload="disconnect()">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <a class="navbar-brand" href="#">CAPI Websocket client Demo</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01"
+            aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarColor01">
+            <ul class="navbar-nav mr-auto"></ul>
+        </div>
+    </nav>
+    <div class="jumbotron">
+        <legend>Server Configuration</legend>
+        <div class="bs-component">
+            <input class="form-control" id="host" type="text" placeholder="Websocket http://..." />
+        </div>
+        <br />
+        <div>
+            <button type="button" id="connect" class="btn btn-primary" onclick="connect();">Connect</button>
+            <button type="button" id="disconnect" class="btn btn-secondary" disabled="disabled"
+                onclick="disconnect();">Disconnect</button>
+        </div>
+        <br />
+        <div id="conversationDiv">
+            <legend>Sender</legend>
+            <div class="form-group">
+                <div class="form-group">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="text" placeholder="Write a message..." />
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" id="sendMessage" onclick="sendMessage();">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <legend>Incoming Messages</legend>
+            <div id="messages"></div>
+        </div>
+    </div>
+</body>
+</html>
