@@ -15,12 +15,14 @@
 
         function connect() {
             var host = document.getElementById('host').value;
+            var user = document.getElementById('user').value;
+            var app = document.getElementById('app').value;
+           
             var socket = new SockJS(host);
             stompClient = Stomp.over(socket);
-            stompClient.connect({}, function (frame) {
+            stompClient.connect( {"user": user}, function (frame) {
                 setConnected(true);
-                console.log('Connected: ' + frame);
-                stompClient.subscribe('/topic/messages', function (messageOutput) {
+                stompClient.subscribe( "/topic/messages/" + app, function (messageOutput) {
                     showMessageOutput(JSON.parse(messageOutput.body));
                 });
             });
@@ -36,7 +38,11 @@
 
         function sendMessage() {
             var text = document.getElementById('text').value;
-            stompClient.send("/ws-demo/chat", {}, JSON.stringify({ 'from': 'demo', 'text': text }));
+            var app = document.getElementById('app').value;
+            var token = document.getElementById('token').value;
+            stompClient.send("/demo/chat/" + app, 
+                            { "Authorization": token }, 
+                            JSON.stringify({ 'from': 'demo', 'text': text }));
         }
 
         function showMessageOutput(messageOutput) {
@@ -69,6 +75,16 @@
         </div>
     </nav>
     <div class="jumbotron">
+        <legend>Socket Configuration</legend>
+        <div class="bs-component">
+            <input class="form-control" id="user" type="text" placeholder="your user..." />
+        </div>
+        <div class="bs-component">
+            <input class="form-control" id="app" type="text" placeholder="application name..." />
+        </div>
+        <div class="bs-component">
+            <input class="form-control" id="token" type="text" placeholder="token..." />
+        </div>
         <legend>Server Configuration</legend>
         <div class="bs-component">
             <input class="form-control" id="host" type="text" placeholder="Websocket http://..." />
